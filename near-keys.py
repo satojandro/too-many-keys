@@ -176,8 +176,28 @@ def ed25519_sign(msg: bytes, sk: bytes, pk: bytes) -> bytes:
 
 def parse_ed25519_secret(s: str) -> tuple[bytes, bytes]:
     """'ed25519:<b58>' (32-byte seed or 64-byte seed||pub) -> (seed, pubkey)."""
+    s = s.strip()
+    if not s.startswith("ed25519:") and len(s.split()) >= 12:
+        raise SystemExit(
+            "that is a seed phrase, not a private key.\n"
+            "\n"
+            "  This tool cannot derive keys from a seed phrase — it signs with whatever\n"
+            "  ed25519 key you hand it. Two ways forward:\n"
+            "\n"
+            "  1. Let near-cli derive it and write the file this tool reads:\n"
+            "     near account import-account using-seed-phrase '<seed phrase>' \\\n"
+            "       --seed-phrase-hd-path \"m/44'/397'/0'\" <account> \\\n"
+            "       network-config mainnet --check-account-id save-to-legacy-keychain\n"
+            "     then: --key-file ~/.near-credentials/mainnet/<account>.json\n"
+            "\n"
+            "  2. If you already have the key string, it looks like ed25519:<base58>\n"
+            "     and goes in NEAR_PRIVATE_KEY or a credentials JSON."
+        )
     if not s.startswith("ed25519:"):
-        raise SystemExit(f"not an ed25519 key: {s[:12]}… (secp256k1 keys are not supported)")
+        raise SystemExit(
+            f"not an ed25519 key: {s[:12]}…\n"
+            "  Expected 'ed25519:<base58>'. secp256k1 keys are not supported."
+        )
     raw = b58decode(s.split(":", 1)[1])
     if len(raw) == 64:
         seed, pub = raw[:32], raw[32:]
@@ -492,6 +512,13 @@ def cmd_clean(args):
     if not args.no_ages:
         table = block_time_table(Rpc(args.archival, retries=2, timeout=15), height)
     rows = annotate(keys, table, time.time_ns())
+
+    if args.no_ages and args.stale_days > 0 and not args.all:
+        raise SystemExit(
+            "--no-ages disables the idle filter: with no block-time data every key looks\n"
+            "like it has 0 idle days, so --stale-days would select nothing.\n"
+            "Drop --no-ages (the block-time table is cached in ~/.near-keys/) or pass --all."
+        )
 
     keep = {k.strip() for k in (args.keep or "").split(",") if k.strip()}
     full = [r for r in rows if r["kind"] == "full"]
