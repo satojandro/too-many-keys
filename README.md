@@ -26,7 +26,6 @@ If you want to check any of this before running it: the tool has no imports beyo
 
 Two subcommands, one file, standard library only:
 
-
 ```
 near-keys.py list  <account>     # read-only report
 near-keys.py clean <account>     # delete, dry-run unless --execute
@@ -118,7 +117,6 @@ already excludes the usual shapes.
   `KeyPairSigner.signTransaction` for the same inputs.
 - Multi-action `DeleteKey` batches executed on testnet, verified gone afterwards.
 - Read-only audits against mainnet accounts holding 293 keys (3 pages at `limit=100`).
-
 - **Full prune run on mainnet**: a 293-key account cleaned to 11 keys — 282 deletions in 6
   transactions (50/50/50/50/50/32), every transaction confirmed, then re-listed to verify.
   The account moved from "unusable in any non-paginating client" to working again, and
