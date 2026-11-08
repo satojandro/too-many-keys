@@ -105,9 +105,9 @@ already excludes the usual shapes.
   `--allow-full-access`, and the tool refuses if that would delete *all* of them and brick
   the account.
 - Non-ed25519 keys (secp256k1) are skipped — the local signer only supports ed25519.
-- After sending, every deleted key is re-queried and the account is re-counted.
-  `view_access_key` returns a *result* carrying an `error` string for a missing key (not a
-  JSON-RPC error), so both shapes are handled.
+- After sending, the account is re-listed (paginated) and every deleted key is checked
+  against that fresh list. One re-list, not one request per key — 282 sequential
+  `view_access_key` calls take minutes and look like a hang.
 - Deleting a function-call key logs an app out; it cannot move funds. That is why the keep
   list is usually just your own contracts.
 

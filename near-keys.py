@@ -606,20 +606,13 @@ def cmd_clean(args):
         nonce += 1
         time.sleep(args.pause)
 
-    # ---- verify: deleted keys must now be absent ----
-    # view_access_key answers with a *result* carrying an `error` string when the
-    # key is gone ("access key … does not exist while viewing"), so check both.
-    print("\nverifying…")
-    still_there = []
-    for k in ok_keys:
-        try:
-            res = rpc.view_key(args.account, k)
-            if "error" not in res:
-                still_there.append(k)
-        except RpcError as e:
-            if "does not exist" not in str(e) and "UNKNOWN_ACCESS_KEY" not in str(e):
-                still_there.append(k)
+    # ---- verify ----
+    # One paginated re-list beats one request per key: 282 sequential view_access_key
+    # calls take minutes and look like a hang.
+    print("\nverifying… (paginated re-list)")
     remaining, _, rem_h = list_keys(rpc, args.account)
+    present = {k["public_key"] for k in remaining}
+    still_there = [k for k in ok_keys if k in present]
     print(f"deleted : {len(ok_keys) - len(still_there)}")
     print(f"failures: {len(failed) + len(still_there)}")
     print(f"now     : {len(remaining)} keys at block {rem_h}")
