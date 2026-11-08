@@ -119,8 +119,9 @@ already excludes the usual shapes.
 - Multi-action `DeleteKey` batches executed on testnet, verified gone afterwards.
 - Read-only audits against mainnet accounts holding 293 keys (3 pages at `limit=100`).
 
-**Not yet verified**: a full prune run against a >100-key mainnet account. Until that
-happens, treat `--execute` as tooling you have read the code of.
+- **Full prune run on mainnet**: a 293-key account cleaned to 11 keys — 282 deletions in 6
+  transactions (50/50/50/50/50/32), every transaction confirmed, then re-listed to verify.
+  The account moved from "unusable in any non-paginating client" to working again.
 
 ## Implementation notes
 
