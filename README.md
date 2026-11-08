@@ -63,12 +63,12 @@ entries. Accounts typically accumulate one function-call key per app, per login,
 ## Quickstart
 
 ```bash
-python3 near-keys.py list alejandro.example --csv keys.csv     # no key needed
-python3 near-keys.py clean alejandro.example --keep myapp.near  # dry run
-python3 near-keys.py clean alejandro.example --keep myapp.near \
+python3 near-keys.py list someone.near --csv keys.csv     # no key needed
+python3 near-keys.py clean someone.near --keep myapp.near  # dry run
+python3 near-keys.py clean someone.near --keep myapp.near \
     --stale-days 365 --dump-tx                                  # inspect the unsigned tx
-python3 near-keys.py clean alejandro.example --keep myapp.near \
-    --stale-days 365 --key-file ~/.near-credentials/mainnet/alejandro.example.json --execute
+python3 near-keys.py clean someone.near --keep myapp.near \
+    --stale-days 365 --key-file ~/.near-credentials/mainnet/someone.near.json --execute
 ```
 
 `list` pages with `limit`/`after_key`, pins every page to the first page's `block_hash` so
@@ -84,13 +84,13 @@ transaction, so 280 keys is 6 transactions rather than 280.
 `clean --execute` needs a **full-access** key for the account. Standard credentials JSON:
 
 ```json
-{"account_id":"alejandro.example","public_key":"ed25519:…","private_key":"ed25519:…"}
+{"account_id":"someone.near","public_key":"ed25519:…","private_key":"ed25519:…"}
 ```
 
 near-cli-rs can put it there for you (this is the format it already uses):
 
 ```bash
-near account import-account using-private-key <ed25519:…> alejandro.example \
+near account import-account using-private-key <ed25519:…> someone.near \
   network-config mainnet
 ```
 
@@ -121,7 +121,26 @@ already excludes the usual shapes.
 
 - **Full prune run on mainnet**: a 293-key account cleaned to 11 keys — 282 deletions in 6
   transactions (50/50/50/50/50/32), every transaction confirmed, then re-listed to verify.
-  The account moved from "unusable in any non-paginating client" to working again.
+  The account moved from "unusable in any non-paginating client" to working again, and
+  logging into near.social with it worked immediately afterwards.
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Offline, no network, no keys: RFC 8032 vectors, base58 round-trips, the transaction body
+(parsed back out and asserted to be exactly N × `DeleteKey` with nothing trailing), and the
+signer-input refusals. CI runs them on Python 3.9 and 3.12.
+
+## When to reach for this instead of near-cli-rs
+
+If you want to delete one key you know by name, near-cli-rs does it:
+`near account delete-keys <account> public-keys <pk> network-config mainnet … send`.
+
+This tool exists for the case above the limit, where listing keys in the CLI fails before you
+can see what to delete, and where you want ages and receiver grouping to decide.
 
 ## Implementation notes
 

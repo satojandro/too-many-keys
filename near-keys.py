@@ -25,15 +25,15 @@ Notes that matter:
     below so this runs identically on any machine).
 
 Usage:
-  python3 near-keys.py list alejandro.near
-  python3 near-keys.py list alejandro.near --csv keys.csv
+  python3 near-keys.py list someone.near
+  python3 near-keys.py list someone.near --csv keys.csv
 
   # what would go, without signing anything:
-  python3 near-keys.py clean alejandro.near --keep social.near,wrap.near
+  python3 near-keys.py clean someone.near --keep social.near,wrap.near
 
   # do it, 50 keys per transaction:
-  python3 near-keys.py clean alejandro.near --keep social.near,wrap.near \
-      --key-file ~/.near-credentials/mainnet/alejandro.near.json --execute
+  python3 near-keys.py clean someone.near --keep social.near,wrap.near \
+      --key-file ~/.near-credentials/mainnet/someone.near.json --execute
 """
 from __future__ import annotations
 
