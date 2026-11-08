@@ -1,0 +1,17 @@
+# keys, credentials and account data must never land in this repo
+*.credentials.json
+*-credentials.json
+near-credentials/
+*-keys.json
+*-keys.csv
+*.private_key
+.env
+.env.*
+
+# tool output
+.plan/
+*.log
+__pycache__/
+*.pyc
+
+.DS_Store
