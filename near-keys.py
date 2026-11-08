@@ -203,8 +203,9 @@ def _pk_bytes(pub_b58: str) -> bytes:
     return b58decode(pub_b58.split(":", 1)[1])
 
 
-def build_delete_keys_tx(signer: str, seed: bytes, pub: bytes,
-                         key_b58: list[str], nonce: int, block_hash: bytes) -> bytes:
+def build_delete_keys_tx_body(signer: str, pub: bytes, key_b58: list[str],
+                              nonce: int, block_hash: bytes) -> bytes:
+    """Unsigned borsh(Transaction) — inspectable with --dump-tx."""
     tx = b""
     tx += _s(signer)
     tx += b"\x00" + pub                                   # PublicKey::ED25519
@@ -215,11 +216,20 @@ def build_delete_keys_tx(signer: str, seed: bytes, pub: bytes,
     for k in key_b58:
         tx += b"\x06"                                     # Action::DeleteKey (index 6)
         tx += b"\x00" + _pk_bytes(k)                      # PublicKey::ED25519
+    return tx
+
+
+def sign_tx(tx: bytes, seed: bytes, pub: bytes) -> bytes:
     # near hashes sha256(borsh(Transaction)) directly — no SignableMessage
     # variant prefix for the Transaction case (matches @near-js/signers
     # KeyPairSigner.signTransaction).
     sig = ed25519_sign(hashlib.sha256(tx).digest(), seed, pub)
     return tx + b"\x00" + sig                             # Signature::ED25519
+
+
+def build_delete_keys_tx(signer: str, seed: bytes, pub: bytes,
+                         key_b58: list[str], nonce: int, block_hash: bytes) -> bytes:
+    return sign_tx(build_delete_keys_tx_body(signer, pub, key_b58, nonce, block_hash), seed, pub)
 
 
 # --------------------------------------------------------------------------- #
@@ -523,6 +533,18 @@ def cmd_clean(args):
         print("\nnothing to do.")
         return
 
+    if args.dump_tx:
+        head = rpc.head()["header"]
+        nonce = head["height"] * 1_000_000 + 1
+        first = [r["public_key"] for r in doomed[:args.batch]]
+        body = build_delete_keys_tx_body(args.account, b"\x00" * 32, first, nonce,
+                                         b58decode(head["hash"]))
+        print(f"\nunsigned transaction for batch 1 ({len(first)} DeleteKey actions, "
+              f"nonce {nonce}):")
+        print(base64.b64encode(body).decode())
+        print("decode it with any borsh decoder — it contains only account names, a nonce,")
+        print("a block hash and Action::DeleteKey entries. No transfers, no function calls.")
+
     if not args.execute:
         print("\nDRY RUN — nothing signed. Re-run with --execute to delete.")
         if args.verbose:
@@ -613,6 +635,8 @@ def main():
     cp.add_argument("--pause", type=float, default=1.5, help="seconds between transactions")
     cp.add_argument("--key-file", help="NEAR credentials JSON with a full-access private_key")
     cp.add_argument("--execute", action="store_true", help="actually sign and send")
+    cp.add_argument("--dump-tx", action="store_true",
+                    help="print the unsigned borsh transaction for the first batch and exit")
     cp.add_argument("--verbose", action="store_true")
     cp.set_defaults(func=cmd_clean)
 

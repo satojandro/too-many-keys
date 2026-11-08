@@ -1,10 +1,31 @@
-# near-access-keys
+# too-many-keys
 
 Audit and prune the access keys on a NEAR account that has drifted past the RPC's
 100-key limit — the state that breaks near.social logins and any wallet that resolves a
 full-access key by listing keys.
 
+## What this tool will never do
+
+Worth stating plainly, because "a script that handles account keys" should make you
+suspicious:
+
+- **It never asks for a seed phrase**, and there is no code path that accepts one. It reads a
+  credentials JSON in the format `near-cli` already writes, and refuses the file if the
+  private key does not derive the stored public key.
+- **It makes no network calls except to the RPC endpoint you pass** (`--rpc`, default
+  `https://free.rpc.fastnear.com`). No telemetry, no analytics, no "check for updates".
+- **It can only delete.** The transaction it builds contains `Action::DeleteKey` entries and
+  nothing else — no transfers, no function calls, no `AddKey`. You don't have to take that
+  on faith: `--dump-tx` prints the unsigned borsh body, and any borsh decoder will show you
+  exactly what it holds.
+- **It cannot be pointed at someone else's account.** `DeleteKey` acts on the signer's own
+  account, so the receiver is always the signer.
+
+If you want to check any of this before running it: the tool has no imports beyond
+`hashlib`, `json`, `urllib`, `argparse` and friends.
+
 Two subcommands, one file, standard library only:
+
 
 ```
 near-keys.py list  <account>     # read-only report
@@ -44,6 +65,8 @@ entries. Accounts typically accumulate one function-call key per app, per login,
 ```bash
 python3 near-keys.py list alejandro.example --csv keys.csv     # no key needed
 python3 near-keys.py clean alejandro.example --keep myapp.near  # dry run
+python3 near-keys.py clean alejandro.example --keep myapp.near \
+    --stale-days 365 --dump-tx                                  # inspect the unsigned tx
 python3 near-keys.py clean alejandro.example --keep myapp.near \
     --stale-days 365 --key-file ~/.near-credentials/mainnet/alejandro.example.json --execute
 ```
